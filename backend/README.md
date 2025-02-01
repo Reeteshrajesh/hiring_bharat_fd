@@ -1,29 +1,28 @@
-# FAQ Management System
+# Multilingual FAQ Management System
 
-A robust multilingual FAQ management system built with Node.js, Express, MongoDB, and Redis. Supports automatic translation, caching, and WYSIWYG editor integration.
+A robust FAQ management system with multilingual support, caching, and automated translation capabilities.
 
 ## 🌟 Features
 
 - Multi-language support (English, Hindi, Bengali)
 - Automatic translation using Google Translate
-- Redis caching for improved performance
-- RESTful API endpoints
-- Swagger API documentation
+- Redis caching for performance
+- Nginx as reverse proxy
 - Docker containerization
-- JWT Authentication
-- Input validation
-- Comprehensive error handling
-- Automated tests
+- Swagger API documentation
+- Comprehensive testing
+- AWS EC2 deployment ready
 
 ## 🛠️ Tech Stack
 
 - **Backend**: Node.js, Express.js
 - **Database**: MongoDB
 - **Caching**: Redis
+- **Proxy**: Nginx
 - **Documentation**: Swagger
 - **Testing**: Jest
-- **Container**: Docker
-- **Deployment**: AWS EC2
+- **Containerization**: Docker
+- **Cloud**: AWS EC2
 
 ## 📁 Project Structure
 
@@ -31,36 +30,35 @@ A robust multilingual FAQ management system built with Node.js, Express, MongoDB
 backend/
 ├── src/
 │   ├── controllers/
-│   │   └── faqController.js
+│   │   └── faqController.js      # FAQ CRUD operations
 │   ├── middleware/
-│   │   └── errorHandler.js
+│   │   └── errorHandler.js       # Error handling
 │   ├── models/
-│   │   └── faq.js
+│   │   └── faq.js               # FAQ MongoDB model
 │   ├── routes/
-│   │   └── faqRoutes.js
+│   │   └── faqRoutes.js         # API routes
 │   ├── services/
-│   │   ├── cacheService.js
-│   │   └── translationService.js
-│   ├── validators/
-│   │   └── faqValidator.js
-│   └── app.js
+│   │   ├── cacheService.js      # Redis caching
+│   │   └── translationService.js # Translation logic
+│   └── app.js                   # Main application
+├── nginx/
+│   └── nginx.conf               # Nginx configuration
 ├── tests/
-│   └── faq.test.js
-├── .env.example
-├── Dockerfile
-├── docker-compose.yml
+│   └── faq.test.js             # API tests
+├── Dockerfile                   # Node.js app container
+├── docker-compose.yml          # Multi-container setup
 └── package.json
 ```
 
 ## 🚀 Local Development Setup
 
 ### Prerequisites
-- Node.js (v14 or higher)
-- MongoDB
-- Redis
-- Docker and Docker Compose (optional)
+- Docker and Docker Compose
+- Node.js (if running locally)
+- MongoDB (if running locally)
+- Redis (if running locally)
 
-### Option 1: Without Docker
+### Using Docker (Recommended)
 
 1. Clone the repository:
 ```bash
@@ -68,110 +66,130 @@ git clone <repository-url>
 cd backend
 ```
 
-2. Install dependencies:
+2. Configure environment:
+```bash
+cp .env.example .env
+# Edit .env with your settings
+```
+
+3. Start services:
+```bash
+docker-compose up -d
+```
+
+The application will be available at:
+- API: http://localhost
+- Swagger Docs: http://localhost/api/docs
+
+### Manual Setup
+
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Set up environment variables:
+2. Configure environment:
 ```bash
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env with your settings
 ```
 
-4. Start the server:
+3. Start server:
 ```bash
 npm run dev
 ```
 
-### Option 2: Using Docker
+## ⚙️ Configuration
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd backend
+### Environment Variables (.env)
+```env
+NODE_ENV=development
+PORT=3000
+MONGODB_URI=mongodb://mongodb:27017/faq_db
+REDIS_URL=redis://redis:6379
+JWT_SECRET=your-secret-key
 ```
 
-2. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
+### Nginx Configuration
+```nginx
+# nginx/nginx.conf
+events {
+    worker_connections 1024;
+}
 
-3. Build and run containers:
-```bash
-docker-compose up --build
+http {
+    upstream backend_servers {
+        server app:3000;
+    }
+
+    server {
+        listen 80;
+        server_name localhost;
+
+        location / {
+            proxy_pass http://backend_servers;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+        }
+    }
+}
 ```
 
 ## 🌐 AWS EC2 Deployment
 
-### Step 1: Launch EC2 Instance
-
-1. Log in to AWS Console
-2. Launch an EC2 instance:
-   - Choose Ubuntu Server 20.04 LTS
-   - Select t2.micro (or larger based on needs)
+1. Launch EC2 Instance:
+   - Ubuntu Server 20.04 LTS
+   - t2.micro or larger
    - Configure security group:
-     - Allow SSH (Port 22)
-     - Allow HTTP (Port 80)
-     - Allow HTTPS (Port 443)
-     - Allow Custom TCP (Port 3000)
+     - HTTP (80)
+     - HTTPS (443)
+     - SSH (22)
 
-### Step 2: Connect to EC2
-
+2. Connect to EC2:
 ```bash
-chmod 400 your-key.pem
-ssh -i your-key.pem ubuntu@your-ec2-public-ip
+ssh -i your-key.pem ubuntu@your-ec2-ip
 ```
 
-### Step 3: Install Docker and Docker Compose
-
+3. Install Docker & Docker Compose:
 ```bash
 # Update system
-sudo apt-get update
+sudo apt update
 
 # Install Docker
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
-
-# Add user to docker group
-sudo usermod -aG docker ${USER}
-newgrp docker
 
 # Install Docker Compose
 sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 ```
 
-### Step 4: Deploy Application
-
-1. Clone repository:
+4. Deploy Application:
 ```bash
+# Clone repository
 git clone <repository-url>
 cd backend
-```
 
-2. Set up environment:
-```bash
+# Configure environment
 cp .env.example .env
-nano .env  # Edit configuration
-```
+nano .env  # Edit settings
 
-3. Start application:
-```bash
+# Start application
 docker-compose up -d
 ```
 
 ## 📡 API Endpoints
 
 ### FAQ Endpoints
-
 ```bash
 # Get all FAQs
 GET /api/faqs
 
-# Get FAQ by ID
-GET /api/faqs/:id
+# Get FAQs in specific language
+GET /api/faqs?lang=hi
 
 # Create FAQ (Auth required)
 POST /api/faqs
@@ -183,171 +201,96 @@ PUT /api/faqs/:id
 DELETE /api/faqs/:id
 ```
 
-### Authentication Endpoints
-
-```bash
-# Login
-POST /api/auth/login
-
-# Register
-POST /api/auth/register
-```
-
-### Language Support
-
-Add `?lang=` query parameter to specify language:
-```bash
-# Get FAQs in Hindi
-GET /api/faqs?lang=hi
-
-# Get FAQs in Bengali
-GET /api/faqs?lang=bn
-```
-
 ## 🧪 Testing
 
-Run tests:
 ```bash
-# Run all tests
+# Run tests
 npm test
 
 # Run with coverage
 npm run test:coverage
 ```
 
-## 📚 API Documentation
+## 📊 Monitoring & Logs
 
-Access Swagger documentation at:
-```
-http://your-domain:3000/api/docs
-```
-
-## 🔍 Monitoring
-
-Check logs:
+### Docker Logs
 ```bash
-# View all container logs
-docker-compose logs
+# All containers
+docker-compose logs -f
 
-# View specific service logs
-docker-compose logs app
-docker-compose logs mongodb
-docker-compose logs redis
+# Specific service
+docker-compose logs -f app
+docker-compose logs -f nginx
 ```
 
-## 🛡️ Security Considerations
-
-1. Set strong passwords in .env
-2. Keep MongoDB and Redis ports private
-3. Use HTTPS in production
-4. Implement rate limiting
-5. Regular security updates
-
-## 🔧 Troubleshooting
-
-1. If containers don't start:
+### Nginx Logs
 ```bash
-docker-compose down
-docker-compose up --build
+# Access logs
+docker-compose exec nginx tail -f /var/log/nginx/access.log
+
+# Error logs
+docker-compose exec nginx tail -f /var/log/nginx/error.log
 ```
 
-2. If MongoDB connection fails:
-```bash
-docker-compose exec mongodb mongo
+## 🛡️ Security Best Practices
+
+1. SSL/TLS Configuration:
+```nginx
+server {
+    listen 443 ssl;
+    ssl_certificate /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+}
 ```
 
-3. Check Redis connection:
-```bash
-docker-compose exec redis redis-cli ping
+2. Security Headers:
+```nginx
+add_header X-Frame-Options "SAMEORIGIN";
+add_header X-XSS-Protection "1; mode=block";
+add_header X-Content-Type-Options "nosniff";
 ```
 
-## 📝 Environment Variables
-
-Required variables in .env:
+3. Rate Limiting:
+```nginx
+limit_req_zone $binary_remote_addr zone=one:10m rate=10r/s;
 ```
-NODE_ENV=development
-PORT=3000
-MONGODB_URI=mongodb://mongodb:27017/faq_db
-REDIS_URL=redis://redis:6379
-JWT_SECRET=your-secret-key
-GOOGLE_TRANSLATE_API_KEY=your-api-key
-```
-
-
-### Cloud & DevOps Expertise(I have these also)
-- **AWS Integration**
-  - EC2 deployment configuration
-  - Container orchestration with Docker Compose
-  - Experience with AWS services (ECS, ECR, RDS, ElastiCache)
-  - Infrastructure as Code capabilities
-
-- **DevOps Practices**
-  - Containerization using Docker
-  - CI/CD pipeline expertise
-  - Infrastructure automation
-  - Monitoring and logging setup
-  - Security best practices implementation
-
-### Additional Considerations
-- Scalable architecture design
-- Performance optimization through caching
-- Security-first approach
-- Production-ready configuration
-
-This solution not only meets the backend development requirements but also demonstrates strong DevOps and cloud infrastructure capabilities, ensuring a robust and scalable production deployment.
-
-
 
 ## 💼 Additional Portfolio Projects
 
 ### Infrastructure & Cloud Projects
+1. [Lambda Terraform Project](https://github.com/Reeteshrajesh/Lambda_terraform_project)
+   - AWS Lambda automation
+   - Infrastructure as Code
 
-#### 1. [Lambda Terraform Project](https://github.com/Reeteshrajesh/Lambda_terraform_project)
-- Infrastructure as Code implementation using Terraform
-- AWS Lambda function deployment automation
-- Demonstrates cloud architecture and serverless expertise
-- Showcases infrastructure automation skills
-
-#### 2. [Terraform Infrastructure](https://github.com/Reeteshrajesh/terraform)
-- Comprehensive Terraform configurations for AWS infrastructure
-- Infrastructure as Code (IaC) best practices
-- Resource provisioning and management
-- Automated cloud infrastructure setup
+2. [Terraform Infrastructure](https://github.com/Reeteshrajesh/terraform)
+   - AWS infrastructure setup
+   - Resource management
 
 ### Application Development
+3. [Node.js Food Application](https://github.com/Reeteshrajesh/nodejs-food-app)
+   - Backend API development
+   - Database integration
 
-#### 3. [Node.js Food Application](https://github.com/Reeteshrajesh/nodejs-food-app)
-- Full-featured backend application built with Node.js
-- RESTful API implementation
-- Database integration and management
-- Demonstrates backend development expertise
+### DevOps Implementation
+4. [Pre-screening Assignment](https://github.com/Reeteshrajesh/pre-screening-assignment)
+   - Docker containerization
+   - AWS deployment
 
-### DevOps & Deployment
+## 🎯 Technical Expertise
 
-#### 4. [Pre-screening Assignment](https://github.com/Reeteshrajesh/pre-screening-assignment)
-- Docker containerization implementation
-- AWS cloud deployment
-- Linux environment configuration
-- Showcases practical DevOps skills
+- **Cloud & Infrastructure**
+  - AWS Services (EC2, Lambda, S3)
+  - Terraform
+  - Infrastructure as Code
 
-## 🎯 Technical Expertise Summary
+- **DevOps**
+  - Docker & Containerization
+  - Nginx Configuration
+  - CI/CD Implementation
+  - Linux Administration
 
-### Cloud & Infrastructure
-- AWS Services (EC2, Lambda, S3, RDS)
-- Infrastructure as Code with Terraform
-- Serverless Architecture
-- Cloud Resource Management
-
-### DevOps
-- Docker & Containerization
-- CI/CD Implementation
-- Infrastructure Automation
-- Linux System Administration
-
-### Development
-- Backend Development (Node.js)
-- API Development
-- Database Management
-- System Architecture
-
-This collection of projects demonstrates a comprehensive skill set spanning cloud infrastructure, DevOps practices, and application development, making me well-suited for roles requiring a blend of these technologies.
+- **Development**
+  - Node.js/Express
+  - API Development
+  - Database Management
